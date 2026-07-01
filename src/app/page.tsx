@@ -2,20 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 
-// 日記データ（日付：短い文）の型定義
+// 日記データ（写真と文章のセット）の型定義
+interface DiaryEntry {
+  text: string;
+  photo: string; // 写真を文字データ（Base64）として保存
+}
+
 interface DiaryData {
-  [dateStr: string]: string;
+  [dateStr: string]: DiaryEntry;
 }
 
 export default function Home() {
   const [diaries, setDiaries] = useState<DiaryData>({});
   
-  // 今日の日付を取得して、最初の表示月に設定
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
+  const [photoInput, setPhotoInput] = useState(''); // 写真のプレビュー・保存用
   const [error, setError] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
@@ -23,13 +28,31 @@ export default function Home() {
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // データの読み込み
+  // 保存データの読み込み
   useEffect(() => {
-    const savedData = localStorage.getItem('my_calendar_diaries');
+    const savedData = localStorage.getItem('my_photo_calendar_v1');
     if (savedData) {
       setDiaries(JSON.parse(savedData));
     }
   }, []);
+
+  // 写真ファイルを選択したときの処理
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 写真が大きすぎると保存できないため、簡易チェック（2MB以下を推奨）
+      if (file.size > 2 * 1024 * 1024) {
+        alert("写真は2MB以下のものを選択してください。");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoInput(reader.result as string); // 写真を文字データに変換
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // 保存処理
   const handleSave = (e: React.FormEvent) => {
@@ -37,7 +60,6 @@ export default function Home() {
     setError(null);
 
     if (!selectedDate) return;
-
     if (textInput.length > 100) {
       setError("文章は100文字以内で入力してください。");
       return;
@@ -45,40 +67,31 @@ export default function Home() {
 
     const updatedDiaries = {
       ...diaries,
-      [selectedDate]: textInput
+      [selectedDate]: {
+        text: textInput,
+        photo: photoInput
+      }
     };
 
     setDiaries(updatedDiaries);
-    localStorage.setItem('my_calendar_diaries', JSON.stringify(updatedDiaries));
+    localStorage.setItem('my_photo_calendar_v1', JSON.stringify(updatedDiaries));
 
     setSelectedDate(null);
     setTextInput('');
+    setPhotoInput('');
   };
 
-  // 先月へ戻るボタンの処理
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  // 次月へ進むボタンの処理
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
-
-  // カレンダーのマス目を生成
   const calendarCells = [];
-  
   for (let i = 0; i < firstDayOfMonth; i++) {
-    calendarCells.push(
-      <div key={`empty-${i}`} style={{ padding: '8px', backgroundColor: '#f9fafb', border: '1px solid #f3f4f6' }}></div>
-    );
+    calendarCells.push(<div key={`empty-${i}`} style={{ padding: '8px', backgroundColor: '#f9fafb', border: '1px solid #f3f4f6' }}></div>);
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const text = diaries[dateStr];
-    
-    // 今日かどうかの判定（少し色を変えるため）
+    const entry = diaries[dateStr];
     const isToday = dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     calendarCells.push(
@@ -86,38 +99,27 @@ export default function Home() {
         key={dateStr} 
         onClick={() => {
           setSelectedDate(dateStr);
-          setTextInput(text || '');
+          setTextInput(entry?.text || '');
+          setPhotoInput(entry?.photo || '');
           setError(null);
         }}
         style={{
-          padding: '8px',
-          border: '1px solid #e5e7eb',
-          minHeight: '100px',
-          cursor: 'pointer',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          backgroundColor: isToday ? '#fffbeb' : '#fff',
-          transition: 'background-color 0.2s'
+          padding: '4px', border: '1px solid #e5e7eb', minHeight: '120px', cursor: 'pointer',
+          display: 'flex', flexDirection: 'column', backgroundColor: isToday ? '#fffbeb' : '#fff',
+          overflow: 'hidden'
         }}
-        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
-        onMouseOut={(e) => e.currentTarget.style.backgroundColor = isToday ? '#fffbeb' : '#fff'}
       >
-        <span style={{ fontWeight: 'bold', color: isToday ? '#d97706' : '#374151', fontSize: '14px' }}>
-          {day}
-        </span>
+        <span style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px', color: isToday ? '#d97706' : '#6b7280' }}>{day}</span>
         
-        {text && (
-          <div style={{
-            fontSize: '11px',
-            color: '#4b5563',
-            backgroundColor: '#eff6ff',
-            padding: '4px',
-            borderRadius: '4px',
-            marginTop: '4px',
-            wordBreak: 'break-all'
-          }}>
-            {text}
+        {/* 写真の表示 */}
+        {entry?.photo && (
+          <img src={entry.photo} alt="daily" style={{ width: '100%', height: '60px', objectFit: 'cover', borderRadius: '2px' }} />
+        )}
+        
+        {/* 文章の表示 */}
+        {entry?.text && (
+          <div style={{ fontSize: '10px', color: '#374151', marginTop: '4px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {entry.text}
           </div>
         )}
       </div>
@@ -125,83 +127,49 @@ export default function Home() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px', fontFamily: 'sans-serif' }}>
-      
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>📅 保存機能付きカレンダー日記</h1>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={prevMonth} style={{ padding: '8px 16px', cursor: 'pointer', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: '#fff', fontSize: '14px' }}>
-            ◀ 先月
-          </button>
-          
-          <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#4b5563', minWidth: '100px', textAlign: 'center' }}>
-            {year}年 {month + 1}月
-          </span>
-          
-          <button onClick={nextMonth} style={{ padding: '8px 16px', cursor: 'pointer', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: '#fff', fontSize: '14px' }}>
-            次月 ▶
-          </button>
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '20px', fontWeight: 'bold' }}>📸 フォトカレンダー日記</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={prevMonth} style={{ padding: '5px 10px', cursor: 'pointer' }}>◀</button>
+          <span style={{ fontWeight: 'bold' }}>{year}年 {month + 1}月</span>
+          <button onClick={nextMonth} style={{ padding: '5px 10px', cursor: 'pointer' }}>▶</button>
         </div>
       </header>
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', 
-        gap: '4px', 
-        backgroundColor: '#f3f4f6', 
-        padding: '8px', 
-        borderRadius: '8px' 
-      }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', backgroundColor: '#eee', border: '2px solid #eee' }}>
         {['日', '月', '火', '水', '木', '金', '土'].map(d => (
-          <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', color: '#6b7280', padding: '8px', fontSize: '14px' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', padding: '5px', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#f9fafb' }}>{d}</div>
         ))}
         {calendarCells}
       </div>
 
       {selectedDate && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px',
-          zIndex: 50
-        }}>
-          <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '100%' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>{selectedDate} の一言</h2>
-            
-            <form onSubmit={handleSave}>
-              <textarea 
-                value={textInput} 
-                onChange={(e) => setTextInput(e.target.value)}
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  border: '1px solid #d1d5db',
-                  boxSizing: 'border-box',
-                  marginBottom: '4px'
-                }}
-                placeholder="今日の一言を入力（100文字以内）"
-              />
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+          <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '10px', width: '100%', maxWidth: '400px' }}>
+            <h2 style={{ fontSize: '18px', marginBottom: '15px' }}>{selectedDate} の記録</h2>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               
-              <span style={{ display: 'block', textAlign: 'right', fontSize: '12px', color: textInput.length > 100 ? 'red' : '#9ca3af', marginBottom: '12px' }}>
-                {textInput.length} / 100文字
-              </span>
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>写真 (1枚)</label>
+                <input type="file" accept="image/*" onChange={handleFileChange} />
+                {photoInput && <img src={photoInput} alt="preview" style={{ width: '100%', height: '150px', objectFit: 'cover', marginTop: '10px', borderRadius: '5px' }} />}
+              </div>
 
-              {error && (
-                <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', padding: '8px', borderRadius: '6px', fontSize: '14px', marginBottom: '12px' }}>
-                  {error}
-                </div>
-              )}
+              <div>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>短い文 (100文字以内)</label>
+                <textarea 
+                  value={textInput} onChange={(e) => setTextInput(e.target.value)}
+                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} rows={3}
+                />
+                <div style={{ textAlign: 'right', fontSize: '12px', color: textInput.length > 100 ? 'red' : '#999' }}>{textInput.length}/100</div>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                <button type="button" onClick={() => setSelectedDate(null)} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: '#fff', cursor: 'pointer' }}>キャンセル</button>
-                <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>保存</button>
+              {error && <div style={{ color: 'red', fontSize: '14px' }}>{error}</div>}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setSelectedDate(null)} style={{ padding: '8px 15px' }}>キャンセル</button>
+                <button type="submit" style={{ padding: '8px 15px', backgroundColor: '#0070f3', color: '#fff', border: 'none', borderRadius: '5px' }}>保存</button>
               </div>
             </form>
           </div>
