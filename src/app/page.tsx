@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 
-// 日記データ（写真と文章のセット）の型定義
 interface DiaryEntry {
   text: string;
-  photo: string; // 写真を文字データ（Base64）として保存
+  photo: string;
 }
 
 interface DiaryData {
@@ -20,7 +19,7 @@ export default function Home() {
   
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
-  const [photoInput, setPhotoInput] = useState(''); // 写真のプレビュー・保存用
+  const [photoInput, setPhotoInput] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const year = currentDate.getFullYear();
@@ -28,7 +27,6 @@ export default function Home() {
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // 保存データの読み込み
   useEffect(() => {
     const savedData = localStorage.getItem('my_photo_calendar_v1');
     if (savedData) {
@@ -36,31 +34,61 @@ export default function Home() {
     }
   }, []);
 
-  // 写真ファイルを選択したときの処理
+  // 【大改修】写真を選択したときの自動圧縮処理
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("写真は2MB以下のものを選択してください。");
+      // 制限を5MBに変更
+      if (file.size > 5 * 1024 * 1024) {
+        alert("写真は5MB以下のものを選択してください。");
         return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoInput(reader.result as string);
+        // 画像をプログラム上で開き、縮小の準備をする
+        const img = document.createElement('img');
+        img.onload = () => {
+          // 最大サイズを800pxに設定（これ以上大きい写真は800pxに縮小）
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
+
+          // 縦横比を維持したままサイズを計算
+          if (width > height && width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+
+          // 見えない画用紙（Canvas）を用意して、縮小した画像を貼り付ける
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // JPEG形式で画質を70% (0.7) に落として超軽量な文字データにする
+            const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+            setPhotoInput(compressedData); // 軽くなったデータを保存セット！
+          }
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // 保存処理
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!selectedDate) return;
     
-    // 【変更点】50文字以上の長文は入力できないバリデーション
     if (textInput.length > 50) {
       setError("文章は50文字以内で入力してください。");
       return;
@@ -112,7 +140,6 @@ export default function Home() {
       >
         <span style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px', color: isToday ? '#d97706' : '#6b7280' }}>{day}</span>
         
-        {/* 写真の表示（アスペクト比維持仕様） */}
         {entry?.photo && (
           <div style={{ 
             width: '100%', 
@@ -127,16 +154,11 @@ export default function Home() {
             <img 
               src={entry.photo} 
               alt="daily" 
-              style={{ 
-                width: '100%', 
-                height: '100%', 
-                objectFit: 'contain' 
-              }} 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
             />
           </div>
         )}
         
-        {/* 文章の表示 */}
         {entry?.text && (
           <div style={{ fontSize: '10px', color: '#374151', marginTop: '4px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {entry.text}
@@ -171,7 +193,7 @@ export default function Home() {
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               
               <div>
-                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>写真 (1枚)</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>写真 (最大5MBまで)</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} />
                 {photoInput && (
                   <div style={{ width: '100%', height: '180px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px', borderRadius: '5px', overflow: 'hidden' }}>
@@ -181,7 +203,6 @@ export default function Home() {
               </div>
 
               <div>
-                {/* 【変更点】ラベルとプレースホルダーを50文字以内に変更 */}
                 <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>短い文 (50文字以内)</label>
                 <textarea 
                   value={textInput} 
@@ -190,7 +211,6 @@ export default function Home() {
                   style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
                   rows={3}
                 />
-                {/* 【変更点】カウントの分母を50に変更。50文字を超えると赤字になります */}
                 <div style={{ textAlign: 'right', fontSize: '12px', color: textInput.length > 50 ? 'red' : '#999' }}>
                   {textInput.length}/50
                 </div>
