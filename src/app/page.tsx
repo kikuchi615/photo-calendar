@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // 日記データ（日付：短い文）の型定義
 interface DiaryData {
@@ -8,11 +8,8 @@ interface DiaryData {
 }
 
 export default function Home() {
-  // テスト用の初期データ（2026年6月）
-  const [diaries, setDiaries] = useState<DiaryData>({
-    "2026-06-01": "テスト投稿！今日はいい天気。",
-    "2026-06-15": "お昼に美味しいラーメンを食べた。"
-  });
+  // 最初は空っぽの状態でスタート
+  const [diaries, setDiaries] = useState<DiaryData>({});
 
   const [currentDate] = useState(new Date(2026, 5, 1)); // 2026年6月に固定
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -24,7 +21,23 @@ export default function Home() {
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // 保存処理（制約：短文制限）
+  // 【新機能】アプリを開いたときに、PCに保存されているデータを自動で読み込む
+  useEffect(() => {
+    const savedData = localStorage.getItem('my_calendar_diaries');
+    if (savedData) {
+      setDiaries(JSON.parse(savedData));
+    } else {
+      // まだデータが何もない場合の初期サンプル
+      const initialData = {
+        "2026-06-01": "テスト投稿！今日はいい天気。",
+        "2026-06-15": "お昼に美味しいラーメンを食べた。"
+      };
+      setDiaries(initialData);
+      localStorage.setItem('my_calendar_diaries', JSON.stringify(initialData));
+    }
+  }, []);
+
+  // 保存処理（制約：短文制限 ＋ 【新機能】PCへの永久保存）
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -37,10 +50,17 @@ export default function Home() {
       return;
     }
 
-    setDiaries({
+    // 新しい日記データを作成
+    const updatedDiaries = {
       ...diaries,
       [selectedDate]: textInput
-    });
+    };
+
+    // 画面の表示を更新
+    setDiaries(updatedDiaries);
+
+    // 【新機能】ブラウザ（PC）にデータを文字として保存する
+    localStorage.setItem('my_calendar_diaries', JSON.stringify(updatedDiaries));
 
     // フォームを閉じる
     setSelectedDate(null);
@@ -104,7 +124,7 @@ export default function Home() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px', fontFamily: 'sans-serif' }}>
       <header style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>📅 シンプルカレンダー日記</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>📅 保存機能付きカレンダー日記</h1>
         <p style={{ fontSize: '18px', color: '#4b5563' }}>{year}年 {month + 1}月</p>
       </header>
 
@@ -126,7 +146,6 @@ export default function Home() {
       {/* 入力用ポップアップ */}
       {selectedDate && (
         <div style={{
-          fixed: 'inset-0',
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
           backgroundColor: 'rgba(0,0,0,0.5)',
