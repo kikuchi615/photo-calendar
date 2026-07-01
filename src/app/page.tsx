@@ -59,8 +59,10 @@ export default function Home() {
     setError(null);
 
     if (!selectedDate) return;
-    if (textInput.length > 100) {
-      setError("文章は100文字以内で入力してください。");
+    
+    // 【変更点】50文字以上の長文は入力できないバリデーション
+    if (textInput.length > 50) {
+      setError("文章は50文字以内で入力してください。");
       return;
     }
 
@@ -110,12 +112,12 @@ export default function Home() {
       >
         <span style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px', color: isToday ? '#d97706' : '#6b7280' }}>{day}</span>
         
-        {/* 【変更点】写真を切り取らず、縮小して全体を表示する仕様に変更 */}
+        {/* 写真の表示（アスペクト比維持仕様） */}
         {entry?.photo && (
           <div style={{ 
             width: '100%', 
             height: '65px', 
-            backgroundColor: '#f3f4f6', // 余白ができた時の背景色
+            backgroundColor: '#f3f4f6', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
@@ -128,7 +130,7 @@ export default function Home() {
               style={{ 
                 width: '100%', 
                 height: '100%', 
-                objectFit: 'contain' // 👈 これがアスペクト比を維持して縮小する魔法の指示です
+                objectFit: 'contain' 
               }} 
             />
           </div>
@@ -171,7 +173,6 @@ export default function Home() {
               <div>
                 <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>写真 (1枚)</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} />
-                {/* 入力画面のプレビューも綺麗に全体が収まるように設定 */}
                 {photoInput && (
                   <div style={{ width: '100%', height: '180px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px', borderRadius: '5px', overflow: 'hidden' }}>
                     <img src={photoInput} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -180,12 +181,19 @@ export default function Home() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>短い文 (100文字以内)</label>
+                {/* 【変更点】ラベルとプレースホルダーを50文字以内に変更 */}
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>短い文 (50文字以内)</label>
                 <textarea 
-                  value={textInput} onChange={(e) => setTextInput(e.target.value)}
-                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} rows={3}
+                  value={textInput} 
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="今日の一言を入力（50文字以内）"
+                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }} 
+                  rows={3}
                 />
-                <div style={{ textAlign: 'right', fontSize: '12px', color: textInput.length > 100 ? 'red' : '#999' }}>{textInput.length}/100</div>
+                {/* 【変更点】カウントの分母を50に変更。50文字を超えると赤字になります */}
+                <div style={{ textAlign: 'right', fontSize: '12px', color: textInput.length > 50 ? 'red' : '#999' }}>
+                  {textInput.length}/50
+                </div>
               </div>
 
               {error && <div style={{ color: 'red', fontSize: '14px' }}>{error}</div>}
