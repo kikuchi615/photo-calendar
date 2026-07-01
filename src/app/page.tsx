@@ -40,7 +40,6 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // 写真が大きすぎると保存できないため、簡易チェック（2MB以下を推奨）
       if (file.size > 2 * 1024 * 1024) {
         alert("写真は2MB以下のものを選択してください。");
         return;
@@ -48,7 +47,7 @@ export default function Home() {
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhotoInput(reader.result as string); // 写真を文字データに変換
+        setPhotoInput(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -104,16 +103,35 @@ export default function Home() {
           setError(null);
         }}
         style={{
-          padding: '4px', border: '1px solid #e5e7eb', minHeight: '120px', cursor: 'pointer',
+          padding: '4px', border: '1px solid #e5e7eb', minHeight: '130px', cursor: 'pointer',
           display: 'flex', flexDirection: 'column', backgroundColor: isToday ? '#fffbeb' : '#fff',
           overflow: 'hidden'
         }}
       >
         <span style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px', color: isToday ? '#d97706' : '#6b7280' }}>{day}</span>
         
-        {/* 写真の表示 */}
+        {/* 【変更点】写真を切り取らず、縮小して全体を表示する仕様に変更 */}
         {entry?.photo && (
-          <img src={entry.photo} alt="daily" style={{ width: '100%', height: '60px', objectFit: 'cover', borderRadius: '2px' }} />
+          <div style={{ 
+            width: '100%', 
+            height: '65px', 
+            backgroundColor: '#f3f4f6', // 余白ができた時の背景色
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            borderRadius: '2px', 
+            overflow: 'hidden' 
+          }}>
+            <img 
+              src={entry.photo} 
+              alt="daily" 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'contain' // 👈 これがアスペクト比を維持して縮小する魔法の指示です
+              }} 
+            />
+          </div>
         )}
         
         {/* 文章の表示 */}
@@ -153,7 +171,12 @@ export default function Home() {
               <div>
                 <label style={{ display: 'block', fontSize: '14px', marginBottom: '5px' }}>写真 (1枚)</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} />
-                {photoInput && <img src={photoInput} alt="preview" style={{ width: '100%', height: '150px', objectFit: 'cover', marginTop: '10px', borderRadius: '5px' }} />}
+                {/* 入力画面のプレビューも綺麗に全体が収まるように設定 */}
+                {photoInput && (
+                  <div style={{ width: '100%', height: '180px', backgroundColor: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px', borderRadius: '5px', overflow: 'hidden' }}>
+                    <img src={photoInput} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </div>
+                )}
               </div>
 
               <div>
