@@ -55,12 +55,12 @@ export default function Home() {
     setTextInput('');
   };
 
-  // 【新機能】先月へ戻るボタンの処理
+  // 先月へ戻るボタンの処理
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
   };
 
-  // 【新機能】次月へ進むボタンの処理
+  // 次月へ進むボタンの処理
   const nextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
   };
@@ -97,7 +97,7 @@ export default function Home() {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          backgroundColor: isToday ? '#fffbeb' : '#fff', // 今日なら薄い黄色に
+          backgroundColor: isToday ? '#fffbeb' : '#fff',
           transition: 'background-color 0.2s'
         }}
         onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
@@ -127,7 +127,6 @@ export default function Home() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px', fontFamily: 'sans-serif' }}>
       
-      {/* 【変更点】ヘッダーに月切り替えボタンを追加 */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937', margin: 0 }}>📅 保存機能付きカレンダー日記</h1>
         
@@ -169,4 +168,45 @@ export default function Home() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '16px',
-          zIndex:
+          zIndex: 50
+        }}>
+          <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '12px', maxWidth: '400px', width: '100%' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>{selectedDate} の一言</h2>
+            
+            <form onSubmit={handleSave}>
+              <textarea 
+                value={textInput} 
+                onChange={(e) => setTextInput(e.target.value)}
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  boxSizing: 'border-box',
+                  marginBottom: '4px'
+                }}
+                placeholder="今日の一言を入力（100文字以内）"
+              />
+              
+              <span style={{ display: 'block', textAlign: 'right', fontSize: '12px', color: textInput.length > 100 ? 'red' : '#9ca3af', marginBottom: '12px' }}>
+                {textInput.length} / 100文字
+              </span>
+
+              {error && (
+                <div style={{ color: '#dc2626', backgroundColor: '#fef2f2', padding: '8px', borderRadius: '6px', fontSize: '14px', marginBottom: '12px' }}>
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button type="button" onClick={() => setSelectedDate(null)} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', backgroundColor: '#fff', cursor: 'pointer' }}>キャンセル</button>
+                <button type="submit" style={{ padding: '8px 16px', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>保存</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
