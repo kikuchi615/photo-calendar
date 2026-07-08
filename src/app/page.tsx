@@ -11,10 +11,12 @@ interface DiaryData {
   [dateStr: string]: DiaryEntry;
 }
 
+const today = new Date();
+
 export default function Home() {
   const [diaries, setDiaries] = useState<DiaryData>({});
   
-  const today = new Date();
+  
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
