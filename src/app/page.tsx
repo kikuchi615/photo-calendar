@@ -162,7 +162,7 @@ export default function Home() {
         )}
         
         {entry?.text && (
-          <div style={{ fontSize: '10px', color: '#374151', marginTop: '4px', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <div style={{ fontSize: '10px', color: '#374151', marginTop: '4px', lineHeight: '1.2', wordBreak: 'break-all' }}>
             {entry.text}
           </div>
         )}
