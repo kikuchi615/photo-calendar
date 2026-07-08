@@ -10,7 +10,6 @@ interface DiaryEntry {
 interface DiaryData {
   [dateStr: string]: DiaryEntry;
 }
-
 const today = new Date();
 
 export default function Home() {
