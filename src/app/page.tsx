@@ -31,8 +31,13 @@ export default function Home() {
   useEffect(() => {
     const savedData = localStorage.getItem('my_photo_calendar_v1');
     if (savedData) {
+    try {
       setDiaries(JSON.parse(savedData));
+    } catch (e) {
+      console.error("LocalStorageのデータが破損しています。初期化します。", e);
+      setDiaries({}); // 安全に空データを流し込み、画面崩れを防ぐ
     }
+  }
   }, []);
 
   // 【大改修】写真を選択したときの自動圧縮処理
