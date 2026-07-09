@@ -23,3 +23,8 @@ https://github.com/kikuchi615/photo-calendar/blob/main/diagrams/StateTransition.
 ユースケース図↓
 
 https://github.com/kikuchi615/photo-calendar/blob/main/diagrams/usecase.png
+
+
+テストケース↓
+
+https://github.com/kikuchi615/photo-calendar/blob/main/diagrams/tastcase.png
