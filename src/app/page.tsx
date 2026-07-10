@@ -10,13 +10,14 @@ interface DiaryEntry {
 interface DiaryData {
   [dateStr: string]: DiaryEntry;
 }
-const today = new Date();
 
 export default function Home() {
   const [diaries, setDiaries] = useState<DiaryData>({});
+  //追加したところ
+  const [todayStr, setTodayStr] = useState<string>('');
+
   
-  
-  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
@@ -29,6 +30,11 @@ export default function Home() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   useEffect(() => {
+    //追加
+    const t = new Date();
+    setTodayStr(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`);
+    setCurrentDate(new Date(t.getFullYear(), t.getMonth(), 1)); // カレンダーの月も日本時間に合わせる
+
     const savedData = localStorage.getItem('my_photo_calendar_v1');
     if (savedData) {
     try {
@@ -127,7 +133,7 @@ export default function Home() {
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const entry = diaries[dateStr];
-    const isToday = dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = dateStr === todayStr; // 🟢 めちゃくちゃシンプルになります！
 
     calendarCells.push(
       <div 
