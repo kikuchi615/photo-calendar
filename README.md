@@ -6,6 +6,11 @@
 
 https://kikuchi615.github.io/photo-calendar/
 
+
+操作方法などを説明したyoutubeリンク↓
+
+https://youtu.be/cHjR-glZtvo
+
 --------------------------------------------------------------------------------------
 
 クラス図↓
